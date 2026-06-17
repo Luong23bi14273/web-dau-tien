@@ -9,6 +9,9 @@
             text-align: center;
             background-color: #f0f2f5;
             padding-top: 50px;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
         }
         h1 {
             color: #1877f2;
@@ -22,13 +25,151 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        /* --- KHU VỰC CẤU HÌNH ẢNH GÓC TRÊN BÊN PHẢI VÀ DI CHUYỂN --- */
+        .image-container {
+            /* THAY ĐỔI: Sử dụng fixed để ảnh nằm yên khi cuộn trang */
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 135px; /* Chiều rộng ảnh */
+            height: 240px; /* Chiều cao tính theo tỷ lệ 9:16 (135x240) */
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            
+            /* THAY ĐỔI: Thêm con trỏ move và z-index cao để luôn nằm trên */
+            cursor: move;
+            z-index: 1000;
+            touch-action: none; /* Tối ưu cho thiết bị cảm ứng */
+        }
+
+        .image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.5s ease; /* Hiệu ứng mờ dần trong 0.5 giây */
+            
+            /* THAY ĐỔI: Ngăn trình duyệt tự ý di chuyển ảnh gốc */
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        /* Ảnh thứ 2 mặc định sẽ nằm ở dưới và ẩn đi */
+        .img-2 {
+            opacity: 0;
+            z-index: 1;
+        }
+
+        /* Ảnh 1 nằm trên */
+        .img-1 {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        /* KHI DI CHUỘT VÀO: Ảnh 1 mờ dần rồi biến mất, lộ ảnh 2 */
+        .image-container:hover .img-1 {
+            opacity: 0;
+        }
+        .image-container:hover .img-2 {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+
+    <div id="draggable_image" class="image-container">
+        <img class="img-1" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNHmjDPbhReHvWCku7INl3Wq3QULDvawHePL5MmUsiDTjmthQYIEUth_4&s=10" alt="Ảnh 1">
+        
+        <img class="img-2" src="https://i.pinimg.com/236x/1a/88/e2/1a88e2447b08737fdbfeed008a36a66b.jpg" alt="Ảnh 2">
+    </div>
 
     <h1>Chào Luong23bi14273!</h1>
     <p>Đây là trang web đơn giản để test quy trình lưu lịch sử bằng Git.</p>
     <button class="btn" onclick="alert('Git hoạt động quá mượt mà!')">Bấm vào đây để test</button>
 
+    <script>
+        const imageElement = document.getElementById('draggable_image');
+        
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        // BẮT ĐẦU KÉO (Khi nhấn chuột trái)
+        imageElement.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            // Tính toán vị trí chuột so với góc trái của ảnh
+            offsetX = e.clientX - imageElement.getBoundingClientRect().left;
+            offsetY = e.clientY - imageElement.getBoundingClientRect().top;
+            
+            // Đặt fixed để di chuyển mượt mà
+            imageElement.style.position = 'fixed';
+            // Thêm hiệu ứng box-shadow khi kéo
+            imageElement.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
+        });
+
+        // ĐANG KÉO (Khi di chuyển chuột, cần gắn vào document)
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                // Tính toán vị trí mới
+                let x = e.clientX - offsetX;
+                let y = e.clientY - offsetY;
+
+                // Giới hạn để ảnh không ra ngoài màn hình
+                x = Math.max(0, Math.min(x, window.innerWidth - imageElement.offsetWidth));
+                y = Math.max(0, Math.min(y, window.innerHeight - imageElement.offsetHeight));
+
+                // Cập nhật vị trí
+                imageElement.style.left = x + 'px';
+                imageElement.style.top = y + 'px';
+                // Xóa right, bottom để không xung đột
+                imageElement.style.right = 'auto'; 
+                imageElement.style.bottom = 'auto';
+            }
+        });
+
+        // THẢ (Khi nhả chuột trái, cần gắn vào document)
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                // Trả lại box-shadow ban đầu
+                imageElement.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+            }
+        });
+
+        // Hỗ trợ cả thiết bị cảm ứng
+        imageElement.addEventListener('touchstart', function(e) {
+            isDragging = true;
+            const touch = e.touches[0];
+            offsetX = touch.clientX - imageElement.getBoundingClientRect().left;
+            offsetY = touch.clientY - imageElement.getBoundingClientRect().top;
+            imageElement.style.position = 'fixed';
+            imageElement.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function(e) {
+            if (isDragging) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                let x = touch.clientX - offsetX;
+                let y = touch.clientY - offsetY;
+                x = Math.max(0, Math.min(x, window.innerWidth - imageElement.offsetWidth));
+                y = Math.max(0, Math.min(y, window.innerHeight - imageElement.offsetHeight));
+                imageElement.style.left = x + 'px';
+                imageElement.style.top = y + 'px';
+                imageElement.style.right = 'auto'; 
+                imageElement.style.bottom = 'auto';
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', function() {
+            if (isDragging) {
+                isDragging = false;
+                imageElement.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+            }
+        });
+    </script>
 </body>
 </html>
